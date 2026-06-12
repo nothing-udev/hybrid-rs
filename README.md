@@ -17,11 +17,11 @@
        Decode Layer (Zero-copy)                                    │ 
              │                                         Rate Limiter (AtomicU64 Bucket)
        Normalize Layer                                             │
-             │                                             Order Manager
+             │                                                Order Manager
        OrderBook Engine (Sync)                                     ▲
              │                                                     │
-             ▼                                                Risk Engine
-        DISPATCHER (Fan-out)                                       ▲
+             ▼                                                     │  
+        DISPATCHER (Fan-out)                                       │
              │                                                     │
              ├─[ crossbeam::bounded ]─► Storage Engine [I/O]       │
              │                                                     │
@@ -30,8 +30,8 @@
              └─[ crossbeam::bounded ]─┐ (Low latency border)       │
                                       │                            │
                                       │                            │
-                                      ▼                            │
-   ┌───────────────────────────────────────────────────────────────┴──────────┐
+                                      ▼                            ▼
+   ┌──────────────────────────────────────────────────────────────────────────┐
    │                            WASM RUNTIME (Wasmtime)                       │
    │                                                                          │
    │   ┌────────────┐   ┌────────────┐   ┌────────────┐   ┌────────────┐      │
