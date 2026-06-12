@@ -28,11 +28,19 @@
              ├─[ crossbeam::bounded ]─► External API [Tokio]       │
              │                                                     │
              └─[ crossbeam::bounded ]─┐ (Low latency border)       │
+                                      │                            │
+                                      │                            │
                                       ▼                            │
-                               STRATEGY ENGINE                     │
-                                [ OS Threads ] ────────────────────┘
-                                               └─[ crossbeam::bounded ]
-                                                      (Fast Path)
+   ┌───────────────────────────────────────────────────────────────┴──────────┐
+   │                            WASM RUNTIME (Wasmtime)                       │
+   │                                                                          │
+   │   ┌────────────┐   ┌────────────┐   ┌────────────┐   ┌────────────┐      │
+   │   │ Bot 1      │   │ Bot 2      │   │ Bot 3      │   │ Bot 5000   │      │
+   │   │ (Memory)   │   │ (Memory)   │   │ (Memory)   │   │ (Memory)   │      │
+   │   └─────┬──────┘   └─────┬──────┘   └─────┬──────┘   └─────┬──────┘      │
+   └─────────┼────────────────┼────────────────┼────────────────┼─────────────┘
+             └────────────────┴────────────────┴────────────────┘ 
+                  (Shared Linear Memory + Atomic Host Functions)
   ```
 
 </br>
