@@ -21,21 +21,21 @@
                              │                                                Order Manager                             
                              │                                                     ▲
                              ▼                                                     │ 
-             ┌──────────────────────────────────┐                                  |
-             |           DISPATCHER             |                                  |
-           ┌─|   (Non-blocking Pub/Sub Router)  |                                  |
-           | └──────────────────────────────────┘                                  │
-           |                  │                                                    │
-           |                  ├─[ try_send / Drop ]─► Storage Engine [ClickHouse]  │
-           |                  │                                                    │
+             ┌──────────────────────────────────┐                                  │
+             │           DISPATCHER             │                                  │
+           ┌─│   (Non-blocking Pub/Sub Router)  │                                  │
+           │ └────────────────┬─────────────────┘                                  │
+           │                  │                                                    │
+           │                  ├─[ try_send / Drop ]─► Storage Engine [ClickHouse]  │
+           │                  │                                                    │
            │                  ├─[ try_send / Drop ]─► OrderBook Engine (Sync)      │
-           |                  |                        (Builds L2 Snapshots)       │
-           |                  └─[ Fast SPSC ]─────┐                                │               
-           |                                      │                                │
-           |                                      │                                │
-    ┌──────┴───────┐                     ┌────────┴────────┐                       │
-    │ External API | ◀ ─────────────────▶│   WASM Router   |◀ ─────────────────────┘
-    |   [Tokio]    |    [bot command]    │    Lock-Free    |
+           │                  │                        (Builds L2 Snapshots)       │
+           │                  └─[ Fast SPSC ]─────┐  └───┬───────────────────┘     │               
+           │                                      │      │                         │
+           │                                      │      ▼                         │
+    ┌──────┴───────┐   crossbeam_channel ┌────────┴────────┐                       │
+    │ External API │ ◀ ─────────────────▶│   WASM Router   │◀ ─────────────────────┘
+    │   [Tokio]    │    [bot command]    │    Lock-Free    │
     └──────────────┘                     └─────────────────┘                                            
                                                   ▲
                                                   │
