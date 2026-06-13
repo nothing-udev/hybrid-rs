@@ -5,42 +5,51 @@
 
 ```
                                 CONTROL PLANE
-                   (Subscriptions, API Keys, Routing Rules)
-                                       │
-             ┌─────────────────────────┴───────────────────────────┐
-             ▼                                                     ▼
-        DATA PLANE                                          EXECUTION PLANE
-     [ Tokio Runtime ]                                     [ Tokio Runtime ]
+                   (Subscriptions, API Keys, Routing Rules)
+                                       │
+             ┌─────────────────────────┴───────────────────────────┐
+             ▼                                                     ▼
+        DATA PLANE                                          EXECUTION PLANE
+     [ Tokio Runtime ]                                     [ Tokio Runtime ]
 
-       WS Adapters                                         REST/WS Trading API
-             │                                                     ▲
-       Decode Layer (Zero-copy)                                    │ 
-             │                                         Rate Limiter (AtomicU64 Bucket)
-       Normalize Layer                                             │
-             │                                                Order Manager
-       OrderBook Engine (Sync)                                     ▲
-             │                                                     │
-             ▼                                                     │  
-        DISPATCHER (Fan-out)                                       │
-             │                                                     │
-             ├─[ crossbeam::bounded ]─► Storage Engine [I/O]       │
-             │                                                     │
-             ├─[ crossbeam::bounded ]─► External API [Tokio]       │
-             │                                                     │
-             └─[ crossbeam::bounded ]─┐ (Low latency border)       │
-                                      │                            │
-                                      │                            │
-                                      ▼                            ▼
-   ┌──────────────────────────────────────────────────────────────────────────┐
-   │                            WASM RUNTIME (Wasmtime)                       │
-   │                                                                          │
-   │   ┌────────────┐   ┌────────────┐   ┌────────────┐   ┌────────────┐      │
-   │   │ Bot 1      │   │ Bot 2      │   │ Bot 3      │   │ Bot 5000   │      │
-   │   │ (Memory)   │   │ (Memory)   │   │ (Memory)   │   │ (Memory)   │      │
-   │   └─────┬──────┘   └─────┬──────┘   └─────┬──────┘   └─────┬──────┘      │
-   └─────────┼────────────────┼────────────────┼────────────────┼─────────────┘
-             └────────────────┴────────────────┴────────────────┘ 
-                  (Shared Linear Memory + Atomic Host Functions)
+       WS Adapters                                         REST/WS Trading API
+             │                                                     ▲
+       Decode Layer (simd-json / Zero-copy)                        │ 
+             │                                         Rate Limiter (AtomicU64 Bucket)
+       Normalize Layer                                             │
+             │                                                Order Manager
+    OrderBook Engine (Sync)                                        ▲       
+     (Builds L2 Snapshots)                                         │       
+             │                                                     │
+             │                                                     │
+             ▼                                                     │  
+        DISPATCHER (Non-blocking Pub/Sub Router)                   │
+             │                                                     │
+             ├─[ try_send / Drop ]─► Storage Engine [ClickHouse]   │
+             │                                                     │
+             ├─[ try_send / Lag Drop ]─► External API [Tokio]      │
+             │                                                     │
+             └─[ Fast SPSC ]──────────┐                            │
+                                      │                            │
+                                      │                            │
+                                ┌─────┴─────┐                      │
+                                │WASM Router|                      |
+                                │ Lock-Free |  ◄ ──────────────────┘
+                                └───────────┘
+                                      ▲
+                                      │
+                                      ▼                            
+   ┌──────────────────────────────────────────────────────────────────────────┐
+   │                            WASM RUNTIME (Wasmtime)                       │
+   │                                                                          │
+   │   ┌────────────┐   ┌────────────┐   ┌────────────┐   ┌────────────┐      │
+   │   │ Bot 1      │   │ Bot 2      │   │ Bot 3      │   │ Bot 5000   │      │
+   │   │ (Memory)   │   │ (Memory)   │   │ (Memory)   │   │ (Memory)   │      │
+   │   └─────┬──────┘   └─────┬──────┘   └─────┬──────┘   └─────┬──────┘      │
+   └─────────┼────────────────┼────────────────┼────────────────┼─────────────┘
+             └────────────────┴────────────────┴────────────────┘ 
+(Shared Linear Memory(Cache-line aligned, #[repr(align(64))]) + Atomic Host Functions)
+
   ```
 
 </br>
