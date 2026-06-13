@@ -4,30 +4,27 @@
 <h2> Architecture </h2>
 
 ```
-                                        CONTROL PLANE
-                           (Subscriptions, API Keys, Routing Rules)
-                                               │
-                     ┌─────────────────────────┴───────────────────────────┐
-                     ▼                                                     ▼
-           DATA PLANE (Read Only)                                    EXECUTION PLANE
-             [ Tokio Runtime ]                                     [ Tokio Runtime ]
-        
-               WS Adapters                                         REST/WS Trading API
-                     │                                                     ▲
-               Decode Layer                                                │
-          (simd-json / Zero-copy)                                          │ 
-                     │                                         Rate Limiter (AtomicU64 Bucket)
-               Normalize Layer                                             │
-                     │                                                Order Manager                             
-                     │                                                     ▲
-                     ▼                                                     │ 
-   ┌──────────────────────────────────┐            ┌──────────────┐        │                
-   │           DISPATCHER             │ ◀ ────── ▶ │ External API │────────┘                     
-   │   (Non-blocking Pub/Sub Router)  │            │   [Tokio]    │                        
-   └──────────────────────────────────┘            └──────────────┘                       
-                      
-                                                                                            
-    
+                                      CONTROL PLANE
+                         (Subscriptions, API Keys, Routing Rules)
+                                             │
+                   ┌─────────────────────────┴───────────────────────────┐
+                   ▼                                                     ▼
+         DATA PLANE (Read Only)                                    EXECUTION PLANE
+           [ Tokio Runtime ]                                     [ Tokio Runtime ]
+      
+             WS Adapters                                         REST/WS Trading API
+                   │                                                     ▲
+             Decode Layer                                                │
+        (simd-json / Zero-copy)                                          │ 
+                   │                                         Rate Limiter (AtomicU64 Bucket)
+             Normalize Layer                                             │
+                   │                                                Order Manager                             
+                   │                                                     ▲
+                   ▼                                                     │ 
+ ┌──────────────────────────────────┐            ┌──────────────┐        │                
+ │           DISPATCHER             │ ◀ ────── ▶ │ External API │────────┘                     
+ │   (Non-blocking Pub/Sub Router)  │            │   [Tokio]    │                        
+ └──────────────────────────────────┘            └──────────────┘                       
 
   ```
 
